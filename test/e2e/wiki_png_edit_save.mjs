@@ -3,8 +3,9 @@
 // flow_1.png as an attachment through the REST API with the key fetched from
 // POST /drawio/api_key, and rewrites the macro to flow_1.
 import { e2e } from '../../.codex/e2e/lib.mjs';
-import { startStub, setDrawioSettings, STUB_URL } from '../e2e_support/drawio.mjs';
+import { startStub, setDrawioSettings, reseed, STUB_URL } from '../e2e_support/drawio.mjs';
 
+reseed();
 const stub = await startStub();
 const t = await e2e('wiki-png-edit-save');
 await setDrawioSettings(t, { url: STUB_URL, svg: false });

@@ -8,6 +8,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -76,15 +77,43 @@ export async function setDrawioSettings(t, { url, svg }) {
   t.check('save drawio settings');
 }
 
-// Sets Redmine's REST API setting through Administration > Settings > API.
+// Sets Redmine's REST API setting through Administration > Settings > Integrations
+// (the API tab before Redmine 7).
 export async function setRestApi(t, enabled) {
   await t.login('admin');
-  await t.go('/settings?tab=api');
+  await t.go('/settings?tab=integrations');
   await t.sudo();
   const box = t.page.locator('#settings_rest_api_enabled');
   if ((await box.isChecked()) !== enabled) await box.click();
-  await t.page.locator('#tab-content-api input[type=submit]').click();
+  await box.locator('xpath=ancestor::form').locator('input[type=submit]').click();
   await t.settle();
   await t.sudo();
   t.check('save rest api setting');
+}
+
+// Resets the drawio pages and issue (test/e2e/seed.rb) so a save scenario can
+// run again on the same server.
+export function reseed() {
+  const dir = process.env.REDMINE_DIR || 'redmine';
+  const out = execSync(`bundle exec rails runner ${JSON.stringify(path.resolve(HERE, '..', 'e2e', 'seed.rb'))}`,
+    { cwd: dir, env: { ...process.env, RAILS_ENV: process.env.RMP_SERVER_ENV || 'production' } }).toString().trim();
+  return out.split('\n').pop();
+}
+
+// Opens the editor on a diagram (double click) and waits until the stub has the
+// diagram loaded; returns the stub's frame.
+export async function openEditor(t, locator, kind) {
+  await locator.dblclick();
+  const frame = t.page.frameLocator('iframe.drawioEditor');
+  await frame.locator('#status').filter({ hasText: `loaded ${kind}` }).waitFor({ timeout: 15000 });
+  return frame;
+}
+
+// Clicks Save in the stub and waits for the PUT that rewrites the page or issue.
+export async function saveInEditor(t, frame, putPattern) {
+  const put = t.page.waitForResponse(r => putPattern.test(r.url()) && r.request().method() === 'PUT', { timeout: 20000 });
+  await frame.locator('#save').click();
+  const res = await put;
+  await t.page.waitForTimeout(1500);
+  return res.status();
 }
