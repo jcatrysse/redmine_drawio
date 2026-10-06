@@ -379,6 +379,9 @@ EOF
 
             def adaptSvg(svg, size)
                 size = "#{size}px" if not size.nil? and size.to_s =~ /\d+/
+                # Drop what precedes the <svg> element (XML declaration, DOCTYPE): a
+                # fragment would keep it as visible text above the diagram
+                svg = svg.sub(/\A.*?(?=<svg[\s>])/m, '')
                 # Parse SVG as XML to sanitize XSS vectors
                 doc = Nokogiri::XML::DocumentFragment.parse(svg)
                 doc.xpath('.//*').select { |n| n.name.casecmp('script').zero? }.each(&:remove)

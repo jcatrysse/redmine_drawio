@@ -72,5 +72,23 @@ module RedmineDrawio
       assert_includes result, 'fill="red"'
     end
 
+    # diagrams.net exports start with an XML declaration and a DOCTYPE; parsed as a
+    # fragment they became visible text ("!DOCTYPE svg PUBLIC ...") above the diagram
+    def test_drops_xml_declaration_and_doctype
+      svg = %(<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" ) +
+            %("http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<svg width="10px" height="10px"><circle/></svg>)
+      result = Macros.adaptSvg(svg, nil)
+      assert_no_match(/DOCTYPE|<\?xml/, result)
+      assert_match(/\A<svg /, result)
+      assert_includes result, '<circle'
+    end
+
+    def test_default_svg_diagram_starts_with_the_svg_element
+      svg = File.read(Macros.imagePath('defaultImage.svg'), mode: 'rb')
+      result = Macros.adaptSvg(svg, nil)
+      assert_match(/\A<svg /, result)
+      assert_not_includes result, 'DOCTYPE'
+    end
+
   end
 end
