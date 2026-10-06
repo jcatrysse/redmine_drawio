@@ -44,3 +44,5 @@ bower.json
 
 # Ignore vscode history
 .history
+# Redmine checkout made by .codex/redmine_clone.sh
+/redmine/
