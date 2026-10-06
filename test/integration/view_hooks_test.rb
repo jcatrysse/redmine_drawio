@@ -2,6 +2,7 @@
 
 # Copyright (C) 2022 Liane Hampe <liaham@xmera.de>, xmera.
 
+require 'base64'
 require File.expand_path('test_helper', File.dirname(__dir__))
 require File.expand_path('authenticate_user', File.dirname(__dir__))
 require File.expand_path('load_fixtures', File.dirname(__dir__))

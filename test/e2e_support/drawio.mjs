@@ -15,10 +15,17 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const STUB_PORT = Number(process.env.RMP_DRAWIO_STUB_PORT || 3100);
 export const STUB_URL = `http://127.0.0.1:${STUB_PORT}`;
 
+// zlib.crc32 exists from Node 20.15 / 22.2; older Node gets this table-less one.
+const crc32 = zlib.crc32 || (buf => {
+  let c = ~0;
+  for (const b of buf) { c ^= b; for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1)); }
+  return ~c >>> 0;
+});
+
 function chunk(type, data) {
   const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
   const td = Buffer.concat([Buffer.from(type), data]);
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(zlib.crc32(td) >>> 0);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td) >>> 0);
   return Buffer.concat([len, td, crc]);
 }
 
