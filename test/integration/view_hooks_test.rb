@@ -14,7 +14,8 @@ module RedmineDrawio
     include RedmineDrawio::LoadFixtures
     include RedmineDrawio::WithDrawioSettings
 
-    fixtures :users, :email_addresses, :roles
+    fixtures :users, :email_addresses, :roles, :projects, :members, :member_roles,
+             :enabled_modules, :wikis, :wiki_pages, :wiki_contents
 
     def setup
       @view_hooks = RedmineDrawio::Hooks::ViewHooks.instance
@@ -39,14 +40,22 @@ module RedmineDrawio
       assert_select '#flash_warning', 0
     end
 
-    test 'do not render hash code when api is disabled' do
-      render_view_hooks(user: 'admin', password: 'admin')
-      assert @view_hooks.send(:hash_code).blank?
+    # The API key used to be embedded (base64, reversed) in every editable page;
+    # the editor now fetches it from /drawio/api_key when a diagram is saved.
+    test 'do not render the api key when api is disabled' do
+      render_wiki_page(rest_api_enabled: '0')
+      assert_select 'script', text: /var Drawio/
+      assert_not_includes response.body, 'hashCode'
+      assert_not_includes response.body, User.find_by_login('jsmith').api_key
     end
 
-    test 'render hash code when api is enabled' do
-      render_view_hooks(user: 'admin', password: 'admin', rest_api_enabled: '1')
-      assert @view_hooks.send(:hash_code).present?
+    test 'do not render the api key when api is enabled' do
+      render_wiki_page(rest_api_enabled: '1')
+      key = User.find_by_login('jsmith').api_key
+      assert_select 'script', text: /var Drawio/
+      assert_not_includes response.body, 'hashCode'
+      assert_not_includes response.body, key
+      assert_not_includes response.body, Base64.strict_encode64(key).reverse
     end
 
     test 'render user preference for drawio ui' do
@@ -58,6 +67,13 @@ module RedmineDrawio
     end
 
     private
+
+    def render_wiki_page(rest_api_enabled:)
+      Setting.rest_api_enabled = rest_api_enabled
+      log_user('jsmith', 'jsmith')
+      get '/projects/ecookbook/wiki'
+      assert_response :success
+    end
 
     def render_view_hooks(user:, password:, rest_api_enabled: '0')
       Setting.rest_api_enabled = rest_api_enabled

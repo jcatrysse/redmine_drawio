@@ -27,7 +27,12 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 
 ## Already on this branch
 
-- nothing: the branch equals the branch GEOxyz runs today.
+- `eefb2bb` test for GEOxyz 29ddafa (macro dialog hook with a non-HTML request format).
+- API key no longer in the page: the editor fetches it from `POST /drawio/api_key` (session + CSRF,
+  `Cache-Control: no-store`, only for users who may edit wiki pages or issues somewhere, 403 when
+  the REST API is off) right before saving. Tests `test/integration/drawio_api_key_test.rb`,
+  `view_hooks_test.rb`; browser `test/e2e/wiki_png_edit_save.mjs` against a local diagrams.net stub
+  (`test/e2e_support/`).
 
 ## Work list for the migration session
 

@@ -309,8 +309,29 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
             alert(Drawio.strings['drawio_error_saving' ]+msg);
     }
 
+    var apiKey = '';
+
     function getHash() {
-        return Base64Binary.arrayBufferToString(Base64Binary.decodeArrayBuffer(Drawio.settings.hashCode.split('').reverse().join(''))).replace(/\u0000/g,'');
+        return apiKey;
+    }
+
+    /**
+     * Fetches the API key of the current user just before saving, so it is not
+     * embedded in the page. The session and the CSRF token authenticate the request.
+     * @param callback Called when the key is known.
+     */
+    function withApiKey(callback) {
+        $.ajax({
+            url     : Drawio.settings.redmineUrl+'drawio/api_key',
+            type    : 'POST',
+            dataType: 'json',
+            headers : { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') },
+            error   : showError,
+            success : function(response) {
+                apiKey = response.key;
+                callback();
+            }
+        });
     }
 
     /**
@@ -578,7 +599,7 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
             });
         }
 
-        if(resource) {
+        if(resource) withApiKey(function() {
             // Upload the attachment
             $.ajax({
                 url        : Drawio.settings.redmineUrl+'uploads.json?filename='+resource,
@@ -591,7 +612,7 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
                 success    : readWikiPage,
                 error      : showError
             });
-        }
+        });
     }
 
 };

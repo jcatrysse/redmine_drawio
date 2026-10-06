@@ -1,6 +1,5 @@
 # encoding: UTF-8
 require 'redmine'
-require 'base64'
 
 module RedmineDrawio
   module Hooks
@@ -48,7 +47,6 @@ module RedmineDrawio
                 var Drawio = {
                   settings: {
                       redmineUrl: '#{redmine_url}',
-                      hashCode  : '#{hash_code}',
                       drawioUrl : '#{drawio_url}',
                       DMSF      : #{dmsf_enabled? context},
                       isEasyRedmine: #{easyredmine?},
@@ -116,12 +114,6 @@ module RedmineDrawio
         return false if lang == 'en' # English is always loaded, avoid double load
 
         File.exist? "#{File.expand_path('../../../../assets/javascripts/lang', __FILE__)}/drawio_jstoolbar-#{lang}.js"
-      end
-
-      def hash_code
-        return '' unless Setting.rest_api_enabled?
-
-        Base64.encode64(User.current.api_key).gsub(/\n/, '').reverse!
       end
     end
   end

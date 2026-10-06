@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>diagrams.net stub</title>
+<style>body{font:14px sans-serif;background:#fffbe6;margin:20px}button{margin:4px;padding:6px 12px}#status{margin:10px 0;padding:6px;background:#eee}</style>
+</head>
+<body>
+<h1>diagrams.net embed stub (e2e)</h1>
+<p>Speaks the embed protocol (proto=json) like embed.diagrams.net, so the plugin's save flow can be tested offline.</p>
+<div id="status">waiting for load</div>
+<div id="params"></div>
+<button id="save">Save</button>
+<button id="save-empty">Save empty diagram</button>
+<button id="exit">Exit</button>
+<script>
+  // Parent origin is the Redmine page; the plugin posts with '*'.
+  var params = new URLSearchParams(location.search);
+  document.getElementById('params').textContent = 'embed=' + params.get('embed') + ' ui=' + params.get('ui') +
+    ' lang=' + params.get('lang') + ' proto=' + params.get('proto');
+  var loaded = null;
+  var XML = '<mxfile host="stub"><diagram name="Page-1" id="stub">' +
+    '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>' +
+    '<mxCell id="2" value="Saved by the e2e stub" style="rounded=1;fillColor=#f8cecc;" vertex="1" parent="1">' +
+    '<mxGeometry x="20" y="20" width="200" height="60" as="geometry"/></mxCell></root></mxGraphModel></diagram></mxfile>';
+  var SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="240px" height="80px" viewBox="0 0 240 80">' +
+    '<rect x="2" y="2" width="236" height="76" rx="10" fill="#f8cecc" stroke="#b85450"/>' +
+    '<text x="120" y="46" text-anchor="middle" font-family="sans-serif" font-size="16">Saved by the e2e stub</text></svg>';
+  function send(msg) { parent.postMessage(JSON.stringify(msg), '*'); }
+  function toDataUrl(blob) {
+    return new Promise(function(resolve) { var r = new FileReader(); r.onload = function() { resolve(r.result); }; r.readAsDataURL(blob); });
+  }
+  window.addEventListener('message', function(evt) {
+    var msg = JSON.parse(evt.data);
+    if (msg.action === 'load') {
+      loaded = msg;
+      var kind = msg.xmlpng ? 'png' : (msg.xml && msg.xml.indexOf('<svg') >= 0 ? 'svg' : 'xml');
+      document.getElementById('status').textContent = 'loaded ' + kind + ' (' + (msg.xmlpng || msg.xml || '').length + ' chars)';
+    } else if (msg.action === 'export') {
+      document.getElementById('status').textContent = 'export ' + msg.format;
+      if (msg.format === 'xmlpng') {
+        fetch('/export.png').then(function(r) { return r.blob(); }).then(toDataUrl).then(function(data) {
+          send({ event: 'export', format: 'xmlpng', data: data, xml: XML });
+        });
+      } else {
+        send({ event: 'export', format: msg.format, data: 'data:image/svg+xml;base64,' + btoa(SVG), xml: XML });
+      }
+    }
+  });
+  document.getElementById('save').onclick = function() {
+    send({ event: 'save', xml: XML, bounds: { x: 0, y: 0, width: 240, height: 80 }, currentPage: 0 });
+  };
+  document.getElementById('save-empty').onclick = function() {
+    send({ event: 'save', xml: '<mxfile/>', bounds: { x: 0, y: 0, width: 0, height: 0 }, currentPage: 0 });
+  };
+  document.getElementById('exit').onclick = function() { send({ event: 'exit' }); };
+  send({ event: 'init' });
+</script>
+</body>
+</html>
