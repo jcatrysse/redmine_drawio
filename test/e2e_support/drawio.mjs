@@ -92,11 +92,13 @@ export async function setRestApi(t, enabled) {
 }
 
 // Resets the drawio pages and issue (test/e2e/seed.rb) so a save scenario can
-// run again on the same server.
+// run again on the same server. Runs like start_server.sh does (.codex/e2e/env.sh
+// picks the Redmine checkout and its Ruby).
 export function reseed() {
-  const dir = process.env.REDMINE_DIR || 'redmine';
-  const out = execSync(`bundle exec rails runner ${JSON.stringify(path.resolve(HERE, '..', 'e2e', 'seed.rb'))}`,
-    { cwd: dir, env: { ...process.env, RAILS_ENV: process.env.RMP_SERVER_ENV || 'production' } }).toString().trim();
+  const root = path.resolve(HERE, '..', '..');
+  const seed = path.join(root, 'test', 'e2e', 'seed.rb');
+  const out = execSync(`. .codex/e2e/env.sh && RAILS_ENV="$RMP_SERVER_ENV" run bundle exec rails runner '${seed}'`,
+    { cwd: root, shell: '/bin/bash', env: process.env }).toString().trim();
   return out.split('\n').pop();
 }
 

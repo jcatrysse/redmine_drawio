@@ -1,6 +1,6 @@
 # wiki-png-edit-save
 
-Run 2026-10-06T20:28:49.494Z against http://127.0.0.1:3000.
+Run 2026-10-06T20:27:20.776Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
@@ -10,3 +10,8 @@ Run 2026-10-06T20:28:49.494Z against http://127.0.0.1:3000.
 | ![](wiki-png-edit-save-saved-reloaded.png) | manager | `/projects/e2e-project/wiki/Drawio_png` | Reloaded: the page now shows flow_1.png (attachment listed) |
 | ![](wiki-png-edit-save-macro-rewritten.png) | manager | `/projects/e2e-project/wiki/Drawio_png/edit` | The page source now references {{drawio_attach(flow_1.png)}} |
 | ![](wiki-png-edit-save-history.png) | manager | `/projects/e2e-project/wiki/Drawio_png/history` | Wiki history: new version with comment "flow.png -> flow_1.png" by manager |
+
+## Problems
+
+- page still embeds hashCode
+- api key requests: none
