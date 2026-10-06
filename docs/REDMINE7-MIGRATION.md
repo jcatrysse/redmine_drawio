@@ -53,9 +53,9 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 
 These GEOxyz commits are on the branch GEOxyz runs today and therefore on this branch. Review each one against the code it now sits on (upstream merges and Redmine 7 core): drop it if upstream or core now does the same, rewrite it if it is not up to the quality rules below (tests, I18n, security, portability), keep it otherwise. Record the verdict per commit in this file.
 
-| commit | date | subject |
-|---|---|---|
-| `29ddafa` | 2026-10-01 | fix: diff in Redmine repositories throws 404 |
+| commit | date | subject | verdict |
+|---|---|---|---|
+| `29ddafa` | 2026-10-01 | fix: diff in Redmine repositories throws 404 | KEEP. Upstream merged it (PR #160), Redmine 7 core does not make it superfluous: a hook partial rendered with the controller's lookup formats still raises `MissingTemplate` (404) when those are not `:html`. Test added: `test/functional/macro_dialog_format_test.rb` fails without `formats: [:html]` (`Missing partial redmine_drawio/_macro_dialog with formats [:text]`), passes with it. The original repository-diff URL did not reproduce on 7.0 in an integration test (11 diff/entry/annotate URL forms, 3 Accept headers, all 200 with and without the fix), so the test pins the hook, not the URL. |
 
 ## After the upgrade (production)
 
