@@ -602,7 +602,7 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
         if(resource) withApiKey(function() {
             // Upload the attachment
             $.ajax({
-                url        : Drawio.settings.redmineUrl+'uploads.json?filename='+resource,
+                url        : Drawio.settings.redmineUrl+'uploads.json?filename='+encodeURIComponent(resource),
                 type       : 'POST',
                 contentType: 'application/octet-stream',
                 headers    : { 'X-Redmine-API-Key': getHash() },

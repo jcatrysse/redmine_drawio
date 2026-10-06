@@ -8,6 +8,7 @@
 #   Drawio_xml      {{drawio_attach(flow.xml)}} and {{drawio_attach(other.drawio, zoom=true)}}
 #   Drawio_options  size=120, the deprecated drawio macro, a non-diagram extension
 #   Drawio_attached {{drawio_attach(stored.png)}}      with an existing attachment stored.png
+#   Drawio_name     {{drawio_attach(R&D plan+v2)}}     a name that must be URL-encoded when saving
 # Issue "E2E drawio issue": diagram in the description and in a note.
 # e2e-private wiki page Drawio_private: a diagram outsider must never see.
 admin = User.find_by!(login: 'admin')
@@ -50,6 +51,7 @@ drawio_page(project, 'Drawio_xml', "Diagram as xml:\n\n{{drawio_attach(flow.xml)
 drawio_page(project, 'Drawio_options', "Fixed width 120:\n\n{{drawio_attach(small, size=120)}}\n\n" \
                                        "Deprecated macro:\n\n{{drawio(old)}}\n\n" \
                                        "Not a diagram:\n\n{{drawio_attach(notes.txt)}}", admin)
+drawio_page(project, 'Drawio_name', "Name with & and +:\n\n{{drawio_attach(R&D plan+v2)}}", admin)
 stored = drawio_page(project, 'Drawio_attached', "Stored diagram:\n\n{{drawio_attach(stored.png)}}", admin)
 attach(stored, File.join(plugin_spec, 'icona.png'), 'stored.png', admin)
 drawio_page(private_project, 'Drawio_private', "Private diagram:\n\n{{drawio_attach(secret)}}", admin)
