@@ -141,7 +141,7 @@ From version `1.0.0` are also supported diagrams in XML format (as used with the
 
 Usage is very simple:
 
-- **make sure ``REST`` API are enabled in Redmine global settings**; this **is needed** to be able to save diagrams as attachments. To enable it, go into `Administration` -> `Settings` -> `API` tab and check the `Enable REST web service` flag.
+- **make sure ``REST`` API are enabled in Redmine global settings**; this **is needed** to be able to save diagrams as attachments. To enable it, go into `Administration` -> `Settings` -> `Integrations` tab (`API` before Redmine 7) and check the `Enable REST web service` flag.
 - in Wiki or issue pages use the `drawio_attach` macro to specify the name of attachment containing the diagram. For example:
 
   ``{{drawio_attach(myDiagram)}}``

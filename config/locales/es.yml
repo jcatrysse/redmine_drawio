@@ -19,7 +19,7 @@ es:
   drawio_dlg_hiligh: "Color de los hipervínculos"
   drawio_dlg_zoom: "Controles de zoom"
   drawio_dlg_initialZoom: "Zoom inicial"
-  drawio_warning_api_needs_to_be_enabled: "Para guardar diagramas de Draw.io, necesitas habilitar la API REST en Administración -> Configuración -> API."
+  drawio_warning_api_needs_to_be_enabled: "Para guardar diagramas de Draw.io, necesitas habilitar la API REST en %{path}."
   field_drawio_ui: "Interfaz de Draw.io"
   label_drawio_ui_default: "Predeterminado"
   label_drawio_ui_atlas: "Atlas"

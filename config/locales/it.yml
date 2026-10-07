@@ -19,7 +19,7 @@ it:
   drawio_dlg_hiligh: "Colore degli hyperlink"
   drawio_dlg_zoom: "Controlli zoom"
   drawio_dlg_initialZoom: "Zoom iniziale"
-  drawio_warning_api_needs_to_be_enabled: For saving drawio diagrams you need to enable the REST API in Administration -> Configuration -> API.
+  drawio_warning_api_needs_to_be_enabled: "For saving drawio diagrams you need to enable the REST API in %{path}."
   field_drawio_ui: Drawio UI
   label_drawio_ui_default: Default
   label_drawio_ui_atlas:   Atlas

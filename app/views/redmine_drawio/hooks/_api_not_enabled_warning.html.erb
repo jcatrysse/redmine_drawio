@@ -1,1 +1,2 @@
-<% flash[:warning] = l(:drawio_warning_api_needs_to_be_enabled) %>
+<% flash[:warning] = l(:drawio_warning_api_needs_to_be_enabled,
+                       path: [l(:label_administration), l(:label_settings), l(:label_integrations)].join(' -> ')) %>

@@ -19,7 +19,7 @@ zh:
   drawio_dlg_hiligh: "超链接颜色"
   drawio_dlg_zoom: "缩放控制"
   drawio_dlg_initialZoom: "初始缩放比例"
-  drawio_warning_api_needs_to_be_enabled: 如需保存 drawio 图表，需在管理后台启用 REST API：路径为 管理 -> 配置 -> API。
+  drawio_warning_api_needs_to_be_enabled: "如需保存 drawio 图表，需在管理后台启用 REST API：路径为 %{path}。"
   field_drawio_ui: Drawio 界面主题
   label_drawio_ui_default: Default
   label_drawio_ui_atlas:   Atlas

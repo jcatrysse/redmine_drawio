@@ -28,7 +28,24 @@ module RedmineDrawio
 
     test 'render warning_api_needs_to_be_enabled when api is disabled' do
       render_view_hooks(user: 'admin', password: 'admin')
-      assert_select '#flash_warning', text: l(:drawio_warning_api_needs_to_be_enabled)
+      assert_select '#flash_warning', text: /REST API/
+    end
+
+    # Redmine 7 moved the REST API switch to Administration > Settings > Integrations;
+    # the warning builds that path from core's own labels, in the user's language
+    test 'warning names the Redmine 7 settings tab' do
+      render_view_hooks(user: 'admin', password: 'admin')
+      assert_select '#flash_warning', text: /Administration -> Settings -> Integrations/
+      assert_select '#flash_warning', text: /-> API/, count: 0
+    end
+
+    test 'warning names the settings tab in the language of the user' do
+      User.find_by_login('admin').update!(language: 'de')
+      render_view_hooks(user: 'admin', password: 'admin')
+      path = "#{::I18n.t(:label_administration, locale: :de)} -> #{::I18n.t(:label_settings, locale: :de)} -> " \
+             "#{::I18n.t(:label_integrations, locale: :de)}"
+      assert_select '#flash_warning', text: /#{Regexp.escape(path)}/
+      assert_select '#flash_warning', text: /muss die REST API/
     end
 
     test 'do not render warning_api_needs_to_be_enabled when api is enabled' do
