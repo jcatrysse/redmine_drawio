@@ -1,6 +1,6 @@
 # svg-sanitizer
 
-Run 2026-10-07T15:58:41.666Z against http://127.0.0.1:3000.
+Run 2026-10-07T16:21:50.986Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
