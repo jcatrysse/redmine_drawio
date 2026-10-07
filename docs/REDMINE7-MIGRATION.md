@@ -4,7 +4,7 @@ Start a Claude Code (or Codex) session on this repository, branch `redmine70-mig
 
 > Read CLAUDE.md and docs/REDMINE7-MIGRATION.md, then carry out the Redmine 7 migration of this
 > plugin as described there, on branch redmine70-migration. That includes the plugin's tests on
-> PostgreSQL and MariaDB, every function exercised end to end on a real running Redmine in a
+> PostgreSQL, every function exercised end to end on a real running Redmine in a
 > browser (with and without permissions, failure paths included) with screenshots you looked at,
 > and an OpenAI review of the diff when OPENAI_API_KEY is set. Report to me in Dutch at the end.
 
@@ -25,6 +25,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
 | Branch head when this file was written | `b1ca175` |
 | Migration session (2026-10-06) | DONE, see "Result of the migration session" below. Branch tested on 7.0-stable-GEOxyz (PostgreSQL 16, MariaDB 10.11) and 5.1-stable (PostgreSQL 16) |
+| Decisions of 2026-10-07 | DONE: all four decisions recorded under "Decided by Jan", q3 and q4 built (`3e51654`, `821dfa8`); tested on 7.0-stable-GEOxyz with PostgreSQL 16 only, alone and with 16 other GEOxyz plugins. Head `bd6ff1e` + this plan |
 
 ## Already on this branch
 
@@ -37,6 +38,10 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | `0cfed33` | Upload request URL-encodes the diagram name (names with `&`, `+`, `#` lost their image type). |
 | `75bc422`, `a6ce52f`, `4bac31b`, `8bc06d9` | End-to-end scenarios for every function (`test/e2e/`, local diagrams.net stub in `test/e2e_support/`, plus one against the real embed.diagrams.net), screenshots for PostgreSQL (`docs/e2e/`), MariaDB (`docs/e2e/mariadb/`) and before pictures on 5.1 with master (`docs/e2e/before/`). |
 | `c586635`, `0cfed33` | OpenAI review findings resolved (`docs/reviews/`). |
+| `b29fd43` | Jan's decisions of 2026-10-07 (`docs/DECISIONS-2026-10-07.md`), written by the coordinating session. |
+| `821dfa8`, `2dcbbe0` | Decision q4: the REST API warning names Administration -> Settings -> Integrations, built from core's labels in the user's language (10 locales, README). |
+| `3e51654` | Decision q3: allowlist filter for inline SVG diagrams. |
+| `bd6ff1e` | Screenshots of the full run after the decisions (PostgreSQL). |
 
 ## Work list for the migration session
 
@@ -56,9 +61,19 @@ In this order: things that break, security, the GEOxyz changes, the open items, 
 4. Editor/save via diagrams.net not verified (external service)
    **DONE**: `test/e2e/real_diagrams_net.mjs` opens the real embed.diagrams.net from Redmine 7, adds an ellipse and saves (flow_1.png with the diagram source, `docs/e2e/real-diagrams-net-*.png`). All other save paths run against a local stub of the embed protocol so they do not depend on the service.
 
+**Decided by Jan on 2026-10-07** (see "Decided by Jan")
+
+8. q3: allowlist filter for SVG. **DONE** `3e51654`.
+9. q4: warning text names the Redmine 7 tab. **DONE** `821dfa8`, `2dcbbe0`.
+10. General: `alias_method` on a core method other plugins also patch. **Checked, nothing to change**:
+    the plugin's only `alias_method`s (`helpers/textile_helper.rb`, `helpers/markdown_helper.rb`) are in
+    the `Rails::VERSION::STRING < '5.0.0'` branch, never loaded on Redmine 7; on Redmine 7 every patch
+    uses `prepend` (Textile/CommonMark helpers, RBPDF, UserPreference, String). Project > Settings,
+    the issue list and an issue page checked with 16 other GEOxyz plugins: see "Together" below.
+
 **Checks**
 
-5. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL AND MariaDB, and once on 5.1-stable if the branch is meant to stay 5.1-compatible.
+5. Run the plugin's whole test suite on Redmine 7.0-stable-GEOxyz with PostgreSQL (MariaDB and 5.1 dropped by Jan on 2026-10-07; the earlier runs stay as history).
    **DONE**, numbers under "Result of the migration session".
 6. Check Redmine 7 webhooks against this plugin (see "Rules"), and note the result here even if nothing is needed.
    **Nothing needed**: the plugin adds no issue data and changes none; it only renders macros in the description/notes text, and the webhook payload (`issues/show.api.rsb`) carries that raw text, as the REST API always did. Saving a diagram goes through the REST API, so it triggers the normal issue-updated webhook like any API update.
@@ -84,6 +99,10 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
   `drawioEditor.js` in place, and then saving a diagram keeps using the old code. Seen in this session.
 - The REST API must stay enabled (Administration > Settings > **Integrations** in Redmine 7, the tab
   was "API" before), as before: diagrams are saved through it.
+- Inline SVG diagrams (only with "Enable SVG diagrams" on) now pass an allowlist: elements outside it,
+  external CSS via `@import` (for example web fonts in a `<style>`) and unsafe links are dropped.
+  Normal diagrams.net exports render unchanged (checked with the default diagram and saved diagrams);
+  a diagram that loaded a web font falls back to the browser's font.
 - Optional: until now every editable wiki/issue page carried the viewer's API key (reversible). If page
   sources may have been shared (saved HTML, support tickets, proxies that cache HTML), resetting API keys
   is the clean fix; nothing in this branch requires it.
@@ -98,6 +117,8 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
 | 7.0-stable-GEOxyz | MariaDB 10.11.14 | 43 runs, 147 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
 | 5.1-stable (Ruby 3.2.11) | PostgreSQL 16.15 | 43 runs, 141 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
 | 7.0-stable-GEOxyz + wiki_extensions, mermaid_macro, paste_as_wiki_tables (redmine70-migration) | PostgreSQL 16.15 | 41 runs, 147 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
+| **2026-10-07** 7.0-stable-GEOxyz, plugin alone | PostgreSQL 16.15 | 52 runs, 206 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
+| **2026-10-07** 7.0-stable-GEOxyz + 15 other GEOxyz plugins | PostgreSQL 16.15 | 52 runs, 206 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
 
 Baseline before any change (7.0-stable-GEOxyz): 33 runs, 91 assertions, 0 failures, 2 skips on both
 databases; rspec could not load (`cannot load such file -- spec_helper`). The 2 skips are the DMSF tests
@@ -113,6 +134,23 @@ Boot and eager loading: the production server (eager load on) started on every r
 | 7.0-stable-GEOxyz, MariaDB (`docs/e2e/mariadb/`) | 16 | 66 | 0 |
 | 7.0-stable-GEOxyz + 3 other GEOxyz plugins, PostgreSQL (not committed) | 15 (before `special_filename`) | 65 | 0 |
 | before: 5.1-stable with master 29ddafa (`docs/e2e/before/`) | 3 | 15 | the 3 expected old behaviours (DOCTYPE text, hashCode in page, so no key request) |
+| **2026-10-07**, 7.0-stable-GEOxyz, PostgreSQL, plugin alone (`docs/e2e/`) | 17 (smoke, core, 15 plugin scenarios) | 71 | 0 |
+| **2026-10-07**, with 15 other GEOxyz plugins (not committed) | 17 | 70 | 2, both not drawio's (below); issue_edit_save stops at the reporter step for the same reason |
+| before q3: `svg_sanitizer.mjs` with the old denylist (`docs/e2e/before/svg-sanitizer-*`) | 1 | 4 | 16: the iframe's script ran for admin, manager, reporter and outsider |
+
+**Together, 2026-10-07** (`RMP_EXTRA_PLUGINS`, all on `redmine70-migration`): depending_custom_fields,
+itil_priority, issue_templates, custom_workflows, view-customize, wiki_extensions, mermaid_macro,
+paste_as_wiki_tables, issue_view_columns, subtask, tint_issues, view_issue_description,
+description_macros, agile, checklists (issue_field_visibility removed, see below). Plugin tests:
+52 runs, 206 assertions, 0 failures, 0 errors, 2 skips; rspec 2 examples, 0 failures. The issue list
+and an issue page answer 200; all drawio scenarios pass. Findings, none caused by drawio (each
+reproduced with redmine_drawio removed from the same checkout):
+- Project > Settings: HTTP 500, `undefined method 'dcf_relevant_custom_fields'` (redmine_depending_custom_fields).
+- `/issues/1` as reporter: 403, from redmine_view_issue_description (the Reporter role has no
+  view_issue_description permission); expected for that plugin, but it hides diagrams in issues too.
+- With redmine_issue_field_visibility added, `rake redmine:load_default_data` dies with
+  `stack level too deep`: its `IssueQuery#initialize_available_filters` patch uses `alias_method`
+  while redmine_agile uses `prepend` (the pattern of the general decision); for that plugin to fix.
 
 Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the plugin adds only
 `POST /drawio/api_key`); its settings page is in the smoke set.
@@ -126,6 +164,7 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
 | `size=` option | macro option | `macro_rendering.mjs` | `macro-rendering-options` |
 | deprecated `{{drawio}}` macro (message) | macro | `macro_rendering.mjs` | `macro-rendering-options` |
 | svg diagrams: refused with the setting off, inline with it on | macro + admin setting | `macro_rendering.mjs` | `macro-rendering-svg-disabled`, `-svg-enabled` (before: `before/macro-rendering-svg-enabled`) |
+| inline SVG allowlist filter (q3): uploaded SVG with iframe, animate, obfuscated javascript: link; admin, manager, reporter, outsider | macro + svg setting on | `svg_sanitizer.mjs`, unit `adapt_svg_test.rb` | `svg-sanitizer-admin/manager/reporter/outsider` (before: `before/svg-sanitizer-*`) |
 | edit + save png on a wiki page (new attachment `_1`, macro rewritten, new version) | double click | `wiki_png_edit_save.mjs` | `wiki-png-edit-save-*` (6) |
 | edit + save svg (inline) and xml (viewer toolbar Edit) | double click / toolbar | `svg_xml_edit_save.mjs` | `svg-xml-edit-save-*` (3) |
 | edit + save in an issue description and in a note | double click | `issue_edit_save.mjs` | `issue-edit-save-*` (4) |
@@ -137,7 +176,7 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
 | jsToolBar button + macro dialog (insert, edit in place, svg only when enabled), wiki and new issue form | editor toolbar | `toolbar_macro_dialog.mjs` | `toolbar-macro-dialog-*` (6) |
 | plugin settings (service URL, svg switch, empty URL falls back to default, non-admin 403) | Administration > Plugins > Configure | `plugin_settings.mjs` | `plugin-settings-*` (4) |
 | "Drawio UI" preference passed to the editor as `ui=` | My account | `my_account_ui.mjs` | `my-account-ui-*` (2) |
-| REST API off: admin warning on every page, none for others, saving fails with an alert and stores nothing | Administration > Settings > Integrations | `rest_api_disabled.mjs` | `rest-api-disabled-*` (3) |
+| REST API off: admin warning on every page naming Administration -> Settings -> Integrations (q4), none for reporter and outsider, saving fails with an alert and stores nothing | Administration > Settings > Integrations | `rest_api_disabled.mjs`, `view_hooks_test.rb` | `rest-api-disabled-*` (4) |
 | PDF export of wiki page and issue (RBPDF patch for stored diagrams) | Also available in: PDF | `pdf_export.mjs` | `pdf-export-*` (3) |
 | diagrams in notification mails | issue note | `mail_notification.mjs` | `mail-notification-mail` |
 | hook: macro dialog for a non-HTML request format (GEOxyz 29ddafa) | every page | minitest `macro_dialog_format_test.rb` | - |
@@ -155,6 +194,10 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
 - OpenAI review (gpt-5), three rounds, every finding answered in `docs/reviews/`:
   `openai-2026-10-06-a6ce52f.md` (2 findings, fixed in `c586635`), `openai-2026-10-06-c586635.md`
   (3 findings: 1 fixed in `0cfed33`, 2 rejected with evidence), `openai-2026-10-06-0cfed33.md`: no findings.
+- 2026-10-07, commits after the decisions (`b29fd43..bd6ff1e`): own review (allowlist checked against
+  namespaced tags, `xlink:href` with and without a bound prefix, entity- and tab-obfuscated schemes,
+  elements nested in removed ones, the img-data-URI path of the svg-off setting; the warning path is
+  built from core labels, no user input) and OpenAI `openai-2026-10-07-bd6ff1e.md`: no findings.
 
 ### Found and not changed (pre-existing, also on master and/or Redmine 5.1)
 
@@ -172,33 +215,44 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
   always empty; saving works anyway (code reading).
 - After a failed save (REST API off) the new image stays in the page until reload; nothing is stored.
 - The inline default SVG has no width (viewBox only) and fills the column; upstream's scaling choice (#151).
-- The REST API warning says "Administration -> Configuration -> API"; the tab is "Integrations" in Redmine 7
-  (10 locales; left for a later change, see questions).
-- SVG sanitizer (upstream 4b5fc8f) is a denylist (`<script>`, `on*`, `javascript:` values); no allowlist,
-  `foreignObject` and `<animate values=...>` lists not handled. Only relevant with "Enable SVG diagrams" on.
 
 Kit notes (not in this plugin): `.codex/test_setup.sh` runs `$SUDO -u postgres` with an empty `$SUDO`
 when root (role created by hand here); `start_server.sh` keeps a pipe open when its output is piped
 (`| tail`), so pipe it to a file; with `mise` on the PATH, `common.sh` picks Ruby 3.4 for Redmine 7
 (set `MISE_BIN` to a missing path to use the system Ruby).
 
-### Open questions for Jan
+### Decided by Jan (2026-10-07)
 
-1. **API key**: built `POST /drawio/api_key` (key fetched only when saving, session + CSRF, no-store,
-   only for users who may edit wiki pages or issues somewhere). Options were: (a) leave it in the page
-   (status quo), (b) upstream develop 6495a3a (server-side encryption; breaks saving, and the browser must
-   be able to decrypt it anyway, so it hides nothing), (c) this endpoint, (d) save without the REST API
-   through a plugin controller (no API key at all, REST API no longer needed; a rewrite of the save flow).
-   Recommendation: keep (c) now, consider (d) later. Note: (c) hands the key out without the sudo
-   password that `/my/api_key` asks for; before, it was in the page with no check at all.
-   Also recommended: tell upstream (mikitex70) that develop 6495a3a breaks saving.
-2. **Two fixes outside the strict migration**: DOCTYPE text above inline SVG (`7aa9fb5`) and the URL
-   encoding of the upload (`0cfed33`). Both small, tested, 5.1-compatible; recommendation: keep them and
-   offer them upstream.
-3. **SVG sanitizer**: replace the denylist by an allowlist (Loofah/Rails sanitizer with SVG elements) in a
-   separate change, or keep "Enable SVG diagrams" off (default). Recommendation: keep it off unless needed.
-4. **REST API warning text** mentions the old "API" tab; update the 10 locales to "Integrations" for
-   Redmine 7 (and keep "API" on 5.1/6.1?). Recommendation: a small follow-up once 5.1 is gone.
+Source: `docs/DECISIONS-2026-10-07.md` (`b29fd43`), answers given in the coordinating session.
+Jan's notes are quoted verbatim.
+
+1. **q1, API key**: Jan chose A, "Ophalen bij het opslaan (zo laten)": "De sleutel staat niet meer in
+   de pagina en er is geen herbouw nodig; optie B kan later nog altijd." Already built (`cdcbea1`);
+   kept, nothing else to do. Saving without the REST API (option d of the question) stays possible later.
+2. **q2, offering the fixes and reporting develop 6495a3a upstream**: Jan chose B, "Niet aanbieden,
+   alleen bij GEOxyz": "Geen extern contact; de fixes blijven alleen in de GEOxyz-versie." No code;
+   nothing is offered or reported to mikitex70. The fixes stay on this branch only.
+3. **q3, SVG security**: Jan chose B, "Strengere filter bouwen (aparte wijziging)": "Een filter die
+   alleen toegelaten SVG-onderdelen doorlaat, nodig als je SVG-diagrammen wilt aanzetten." Built in
+   `3e51654`: `RedmineDrawio::Macros.sanitizeSvg` keeps only known elements (SVG shapes, text, gradients,
+   filters, the XHTML that diagrams.net uses in foreignObject), removes everything else with its
+   content (script, iframe, object, embed, animate, set, ...), drops on* attributes, keeps URL attributes
+   only for fragments, http(s), mailto, relative URLs and data: images (scheme checked after removing
+   whitespace and control characters), and drops styles with javascript:, expression(), behavior,
+   -moz-binding or @import. Tests: 5 unit cases that fail with the old filter, 2 that pin what must stay;
+   browser `test/e2e/svg_sanitizer.mjs` as admin, manager, reporter and outsider (old filter: the
+   iframe's script ran for all four).
+4. **q4, warning text**: Jan chose A, "Aanpassen als kleine opvolging": "De tekst klopt weer met
+   Redmine 7; omdat GEOxyz niet op 5.1 blijft, hoeft de oude naam niet bewaard te worden." Built in
+   `821dfa8`: the warning takes the path from core's labels (`label_administration`, `label_settings`,
+   `label_integrations`), so it reads "Administration -> Settings -> Integrations" in English and follows
+   the admin's language; 2 tests fail without it; e2e `rest_api_disabled.mjs` checks the text and that
+   reporter and outsider see no warning.
+
+General decisions of the same day, applied to this plan: no Redmine 5.1 compatibility (rule replaced
+below; the 5.1 results above are history), PostgreSQL only (MariaDB results above are history, no
+longer required), deface not used by this plugin, `alias_method` checked (work list item 10),
+GitHub Actions stay manual only.
 
 ## How to test
 
@@ -231,7 +285,7 @@ results quoted in the analysis come from it.
 1. **Start**: `git fetch && git checkout redmine70-migration && git pull`. Read this whole file,
    including the analysis report at the bottom. Do not reopen decisions recorded here.
 2. **Baseline, before you change anything**:
-   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL and with MariaDB;
+   - the plugin's tests on Redmine 7.0-stable-GEOxyz with PostgreSQL;
    - a real running Redmine with this plugin (`./.codex/start_server.sh`) and the browser run
      (`./.codex/e2e.sh`: smoke over every page the plugin adds, plus the core issue flows).
    Write the numbers here. Something already broken now is a finding, not your regression.
@@ -243,9 +297,8 @@ results quoted in the analysis come from it.
 4. **GEOxyz changes**: go through the table above, one item at a time. Each kept or re-made change
    is its own commit with a test that proves it. Record the verdict in the table.
 5. **Work list**: then the numbered list, in order. One concern per commit.
-6. **Portability**: everything must run on Redmine's supported databases (PostgreSQL,
-   MySQL/MariaDB; SQLite where the plugin already supports it). Migrations must be reversible and
-   are run down and up on PostgreSQL and MariaDB.
+6. **Portability**: tests and e2e run on PostgreSQL 16 (Jan, 2026-10-07); keep SQL portable where
+   that costs nothing. Migrations must be reversible and are run down and up on PostgreSQL.
 7. **Together**: run with the other GEOxyz plugins installed (the migration kit's harness, or
    `RMP_EXTRA_PLUGINS`). A failure that only appears in combination is a finding to record here.
 8. **End to end, visually, every function**: on the real Redmine from `start_server.sh`
@@ -262,9 +315,8 @@ results quoted in the analysis come from it.
    - Functions without a page (mail in and out, REST API, rake tasks, cron, webhooks): exercise
      them against the same running instance (mails land in `redmine/tmp/mails`, `t.mails()`
      reads them; API through `t.page.request`) and record command and result.
-   - Before pictures where behaviour or layout changes: the branch GEOxyz runs today, on
-     Redmine 5.1, same scenarios, `RMP_E2E_OUT=docs/e2e/before`.
-   - Run the whole e2e set once on MariaDB as well (`RMP_DB=mariadb`, then `start_server.sh --reset`).
+   - Before pictures where behaviour or layout changes: the code before the change, on Redmine 7,
+     same scenarios, `RMP_E2E_OUT=docs/e2e/before`.
 9. **Independent review**: first your own, adversarial: re-read the whole diff as if someone
    else wrote it and you are paid to reject it. Then, **when `OPENAI_API_KEY` is set in the
    session**, `./.codex/openai_review.sh`: it sends the diff of this branch to an OpenAI model
@@ -309,8 +361,13 @@ results quoted in the analysis come from it.
   (on by default: `t.sudo()` in a scenario). The breaker list is in the migration kit's CHECKLIST.md.
 - **Locales**: keep the locales the plugin ships in sync; translate a new key by matching the
   closest existing key in the same file, not from scratch; do not add new languages.
-- **5.1 compatibility**: prefer fixes that also run on Redmine 5.1 so they can be merged early;
-  say so when a fix cannot.
+- **Target only Redmine 7** (Jan, 2026-10-07): GEOxyz goes straight to Redmine 7, no backports to 5.1,
+  nothing cherry-picked to the default branch or the branch production runs today; `redmine70-migration`
+  is what goes live. Do not add code paths that exist only for 5.1.
+- **PostgreSQL only** (Jan, 2026-10-07): production runs PostgreSQL 16; tests and e2e on PostgreSQL.
+  Keep SQL portable where that costs nothing; a MariaDB-only problem is a note, not a blocker.
+- **Patching core**: a core method that other installed plugins also patch is patched with `prepend`,
+  never `alias_method` (Jan, 2026-10-07).
 - **Git**: work on `redmine70-migration` only; never push to the default branch; never force-push
   a branch someone else uses. Descriptive commit messages (what and why). Push after every
   commit, together with the updated status in this file: a cloud session can stop at a usage
@@ -321,7 +378,7 @@ results quoted in the analysis come from it.
 ## Definition of done
 
 - All items of the work list are done or explicitly deferred with a reason, in this file.
-- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL and MariaDB
+- The plugin's tests are green on Redmine 7.0-stable-GEOxyz with PostgreSQL
   (numbers in this file); boot, production-like eager load, migrations up/down OK.
 - Every function in the inventory exercised end to end on a real running Redmine, with and
   without permissions and on its failure paths; `./.codex/e2e.sh` green; screenshots looked at,
