@@ -9,6 +9,7 @@
 #   Drawio_options  size=120, the deprecated drawio macro, a non-diagram extension
 #   Drawio_attached {{drawio_attach(stored.png)}}      with an existing attachment stored.png
 #   Drawio_name     {{drawio_attach(R&D plan+v2)}}     a name that must be URL-encoded when saving
+#   Drawio_svg_xss  {{drawio_attach(vectors.svg)}}     attachment test/e2e_support/xss_vectors.svg
 # Issue "E2E drawio issue": diagram in the description and in a note.
 # e2e-private wiki page Drawio_private: a diagram outsider must never see.
 admin = User.find_by!(login: 'admin')
@@ -54,6 +55,8 @@ drawio_page(project, 'Drawio_options', "Fixed width 120:\n\n{{drawio_attach(smal
 drawio_page(project, 'Drawio_name', "Name with & and +:\n\n{{drawio_attach(R&D plan+v2)}}", admin)
 stored = drawio_page(project, 'Drawio_attached', "Stored diagram:\n\n{{drawio_attach(stored.png)}}", admin)
 attach(stored, File.join(plugin_spec, 'icona.png'), 'stored.png', admin)
+xss = drawio_page(project, 'Drawio_svg_xss', "SVG with XSS vectors:\n\n{{drawio_attach(vectors.svg)}}", admin)
+attach(xss, File.expand_path('../e2e_support/xss_vectors.svg', __dir__), 'vectors.svg', admin)
 drawio_page(private_project, 'Drawio_private', "Private diagram:\n\n{{drawio_attach(secret)}}", admin)
 
 issue = Issue.find_by(project_id: project.id, subject: 'E2E drawio issue') ||

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="420px" height="140px" viewBox="0 0 420 140">
+  <rect x="2" y="2" width="416" height="136" rx="12" fill="#dae8fc" stroke="#6c8ebf"/>
+  <text x="20" y="30" font-family="sans-serif" font-size="14">SVG with XSS vectors (e2e)</text>
+  <foreignObject x="20" y="40" width="380" height="40">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="font:13px sans-serif">HTML label kept</div>
+    <iframe xmlns="http://www.w3.org/1999/xhtml" src="data:text/html,&lt;script&gt;alert('iframe')&lt;/script&gt;" width="10" height="10"></iframe>
+  </foreignObject>
+  <a id="tab-link" xlink:href="java&#x09;script:alert('tab-link')"><text x="20" y="100" fill="#0000ee">link with tab in scheme</text></a>
+  <a id="anim-link"><animate attributeName="href" values="javascript:alert('animate')" begin="0s" fill="freeze"/><text x="220" y="100" fill="#0000ee">animated link</text></a>
+  <image x="380" y="10" width="20" height="20" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="/>
+</svg>

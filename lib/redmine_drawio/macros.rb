@@ -384,16 +384,7 @@ EOF
                 svg = svg.sub(/\A.*?(?=<svg[\s>])/m, '')
                 # Parse SVG as XML to sanitize XSS vectors
                 doc = Nokogiri::XML::DocumentFragment.parse(svg)
-                doc.xpath('.//*').select { |n| n.name.casecmp('script').zero? }.each(&:remove)
-                doc.xpath('.//*').each do |node|
-                    node.attribute_nodes.each do |attr|
-                        if attr.name =~ /\Aon/i
-                            attr.remove
-                        elsif attr.value.strip =~ /\Ajavascript:/i
-                            attr.value = '#'
-                        end
-                    end
-                end
+                sanitizeSvg(doc)
                 localSvg = doc.to_s
                 # Adapt SVG to make it resizable
                 localSvg = localSvg.sub(/<svg /, '<svg preserve_aspect_ratio="xMaxYMax meet" ') unless svg =~ /.* preserve_aspect_ratio=.*/
@@ -417,6 +408,49 @@ EOF
                 end
 
                 localSvg
+            end
+
+            # Elements an SVG diagram may contain: SVG shapes, text, gradients, filters and
+            # the XHTML that diagrams.net puts in foreignObject for labels. Anything else
+            # (script, animate, set, iframe, object, embed, ...) is removed with its content.
+            SVG_ALLOWED_ELEMENTS = %w[
+                svg g defs desc title metadata symbol use switch style
+                path rect circle ellipse line polyline polygon text tspan textpath image
+                lineargradient radialgradient stop pattern clippath mask marker
+                filter feblend fecolormatrix fecomponenttransfer fecomposite feconvolvematrix
+                fediffuselighting fedisplacementmap fedistantlight fedropshadow feflood
+                fefunca fefuncb fefuncg fefuncr fegaussianblur feimage femerge femergenode
+                femorphology feoffset fepointlight fespecularlighting fespotlight fetile feturbulence
+                foreignobject
+                div span p br b strong i em u s strike sub sup font a ul ol li dl dt dd
+                table thead tbody tfoot tr td th caption col colgroup hr pre code blockquote
+                h1 h2 h3 h4 h5 h6 img
+            ].freeze
+            # Attributes that hold a URL: only fragments, http(s), mailto, relative URLs and
+            # data: images are kept
+            SVG_URL_ATTRIBUTES = %w[href src action formaction background poster data].freeze
+            SVG_SAFE_URL = %r{\A(?:\#|https?:|mailto:|data:image/(?:png|jpe?g|gif|webp);|[^:]*\z)}i
+            SVG_UNSAFE_CSS = /javascript:|vbscript:|expression\s*\(|behavior\s*:|-moz-binding|@import/i
+
+            def sanitizeSvg(doc)
+                doc.xpath('.//*').each do |node|
+                    if !SVG_ALLOWED_ELEMENTS.include?(node.name.downcase) ||
+                       (node.name.casecmp('style').zero? && node.content =~ SVG_UNSAFE_CSS)
+                        node.remove
+                        next
+                    end
+                    node.attribute_nodes.each do |attr|
+                        name  = attr.name.downcase.split(':').last # xlink:href, with or without a bound prefix
+                        # browsers ignore whitespace and control characters inside a scheme
+                        value = attr.value.gsub(/[\x00-\x20\x7f]/, '')
+                        if name.start_with?('on') ||
+                           (SVG_URL_ATTRIBUTES.include?(name) && value !~ SVG_SAFE_URL) ||
+                           (name == 'style' && attr.value =~ SVG_UNSAFE_CSS)
+                            attr.remove
+                        end
+                    end
+                end
+                doc
             end
 
             def encapsulateSvg(svg, inlineStyle, diagramName, title, saveName, isDmsf)

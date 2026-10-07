@@ -83,6 +83,68 @@ module RedmineDrawio
       assert_includes result, '<circle'
     end
 
+    # Allowlist (decision q3, 2026-10-07): only known SVG parts pass
+
+    # <animate>/<set> can write a javascript: URL into href after the filter ran
+    def test_removes_animation_elements_that_can_set_attributes
+      svg = '<svg><a><animate attributeName="href" values="#;javascript:alert(1)"/>' \
+            '<set attributeName="href" to="javascript:alert(2)"/><text>x</text></a></svg>'
+      result = Macros.adaptSvg(svg, nil)
+      assert_no_match(/animate|<set|alert/, result)
+      assert_includes result, '<text>x</text>'
+    end
+
+    # an iframe in a foreignObject runs its own document
+    def test_removes_elements_that_load_documents
+      svg = '<svg><foreignObject><div>label</div><iframe src="data:text/html,x"></iframe>' \
+            '<object data="x.swf"></object><embed src="x"/></foreignObject></svg>'
+      result = Macros.adaptSvg(svg, nil)
+      assert_no_match(/iframe|object|embed|data:text/, result)
+      assert_includes result, '<div>label</div>'
+    end
+
+    # browsers ignore tabs and newlines inside a URL scheme
+    def test_neutralizes_obfuscated_javascript_href
+      svg = %(<svg><a href="java&#x09;script:alert(1)">a</a><a xlink:href=" JAVA\nSCRIPT:alert(2)">b</a></svg>)
+      result = Macros.adaptSvg(svg, nil)
+      assert_no_match(/script:/i, result)
+    end
+
+    def test_removes_data_urls_other_than_images
+      svg = '<svg><a href="data:text/html;base64,PHNjcmlwdD4=">a</a>' \
+            '<image href="data:image/png;base64,iVBORw0KGgo="/></svg>'
+      result = Macros.adaptSvg(svg, nil)
+      assert_not_includes result, 'data:text/html'
+      assert_includes result, 'data:image/png;base64,iVBORw0KGgo='
+    end
+
+    def test_removes_dangerous_css
+      svg = '<svg><rect style="fill:red;background:url(javascript:alert(1))"/>' \
+            '<style>rect{behavior:url(x.htc)}</style><circle style="fill:blue"/></svg>'
+      result = Macros.adaptSvg(svg, nil)
+      assert_no_match(/javascript|behavior/, result)
+      assert_includes result, 'style="fill:blue"'
+    end
+
+    def test_keeps_links_and_drawio_source
+      svg = '<svg content="&lt;mxfile&gt;&lt;/mxfile&gt;"><a href="https://example.com/x">x</a>' \
+            '<a href="#cell-1">y</a></svg>'
+      result = Macros.adaptSvg(svg, nil)
+      assert_includes result, 'href="https://example.com/x"'
+      assert_includes result, 'href="#cell-1"'
+      assert_includes result, 'content="&lt;mxfile&gt;&lt;/mxfile&gt;"'
+    end
+
+    # a diagrams.net export keeps its shapes, gradients and html labels
+    def test_default_svg_diagram_keeps_its_parts
+      svg = File.read(Macros.imagePath('defaultImage.svg'), mode: 'rb')
+      result = Macros.adaptSvg(svg, nil)
+      %w[linearGradient stop rect path switch foreignObject div text content=].each do |part|
+        assert_includes result, part
+      end
+      assert_includes result, 'Double click to'
+    end
+
     def test_default_svg_diagram_starts_with_the_svg_element
       svg = File.read(Macros.imagePath('defaultImage.svg'), mode: 'rb')
       result = Macros.adaptSvg(svg, nil)
