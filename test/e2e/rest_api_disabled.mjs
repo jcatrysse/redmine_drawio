@@ -12,7 +12,16 @@ await setRestApi(t, false);
 
 await t.go('/projects/e2e-project');
 if (!(await t.page.locator('#flash_warning').count())) t.problems.push('admin: no REST API warning');
-await t.shot('admin-warning', 'REST API off: the admin sees the drawio warning that the REST API must be enabled');
+const warning = await t.page.locator('#flash_warning').innerText().catch(() => '');
+if (!warning.includes('Administration -> Settings -> Integrations')) t.problems.push(`warning text: ${warning}`);
+await t.shot('admin-warning', 'REST API off: the admin sees the drawio warning, pointing to Administration -> Settings -> Integrations (the Redmine 7 tab)');
+
+for (const user of ['reporter', 'outsider']) {
+  await t.login(user);
+  await t.go('/projects/e2e-project');
+  if (await t.page.locator('#flash_warning').count()) t.problems.push(`${user} sees the admin warning`);
+}
+await t.shot('outsider-no-warning', 'REST API off: reporter and outsider get no warning (outsider shown)');
 
 await t.login('manager');
 await t.go('/projects/e2e-project/wiki/Drawio_png');
