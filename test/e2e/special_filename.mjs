@@ -9,7 +9,7 @@ const stub = await startStub();
 const t = await e2e('special-filename');
 await setDrawioSettings(t, { url: STUB_URL, svg: false });
 
-await t.login('manager');
+await t.login('admin'); // saving as admin too (the other save scenarios use manager)
 await t.go('/projects/e2e-project/wiki/Drawio_name');
 const frame = await openEditor(t, t.page.locator('img.drawioDiagram'), 'png');
 const upload = t.page.waitForRequest(r => r.url().includes('/uploads.json'));

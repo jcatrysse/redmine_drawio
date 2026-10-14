@@ -309,26 +309,31 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
             alert(Drawio.strings['drawio_error_saving' ]+msg);
     }
 
-    var apiKey = '';
+    var token = '';
 
-    function getHash() {
-        return apiKey;
+    /**
+     * Returns the authentication headers of the AJAX requests saving a diagram.
+     * The value is a short lived token identifying the current user, generated
+     * server side: the REST API key is never sent to the browser.
+     */
+    function authHeaders() {
+        return {'X-Redmine-Drawio-Token': token};
     }
 
     /**
-     * Fetches the API key of the current user just before saving, so it is not
-     * embedded in the page. The session and the CSRF token authenticate the request.
-     * @param callback Called when the key is known.
+     * Fetches a fresh token just before saving, so a page left open for a long
+     * time can still save. The session and the CSRF token authenticate the request.
+     * @param callback Called when the token is known.
      */
-    function withApiKey(callback) {
+    function withToken(callback) {
         $.ajax({
-            url     : Drawio.settings.redmineUrl+'drawio/api_key',
+            url     : Drawio.settings.redmineUrl+'drawio/token',
             type    : 'POST',
             dataType: 'json',
             headers : { 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') },
             error   : showError,
             success : function(response) {
-                apiKey = response.key;
+                token = response.token;
                 callback();
             }
         });
@@ -438,7 +443,7 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
                         url     : pageUrl+'.json',
                         type    : 'GET',
                         dataType: 'json',
-                        headers : { 'X-Redmine-API-Key': getHash() },
+                        headers : authHeaders(),
                         data    : {include: 'attachments'},
                         error   : showError,
                         success : function(page) {
@@ -577,7 +582,7 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
                     url     : pageUrl+'.json',
                     type    : 'PUT',
                     dataType: 'text',
-                    headers : { 'X-Redmine-API-Key': getHash() },
+                    headers : authHeaders(),
                     data    : data,
                     error   : showError,
                     success : updateAttachmentList
@@ -592,20 +597,20 @@ function editDiagram(image, resource, isDmsf, pageName, originalName) {
                 url     : pageUrl+'.json',
                 type    : 'GET',
                 dataType: 'json',
-                headers : { 'X-Redmine-API-Key': getHash() },
+                headers : authHeaders(),
                 data    : {include: 'journals'},
                 success : savePage,
                 error   : showError
             });
         }
 
-        if(resource) withApiKey(function() {
+        if(resource) withToken(function() {
             // Upload the attachment
             $.ajax({
                 url        : Drawio.settings.redmineUrl+'uploads.json?filename='+encodeURIComponent(resource),
                 type       : 'POST',
                 contentType: 'application/octet-stream',
-                headers    : { 'X-Redmine-API-Key': getHash() },
+                headers    : authHeaders(),
                 processData: false,
                 data       : imageData,
                 dataType   : 'json',

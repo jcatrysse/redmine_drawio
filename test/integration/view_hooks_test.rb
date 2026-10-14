@@ -59,7 +59,7 @@ module RedmineDrawio
     end
 
     # The API key used to be embedded (base64, reversed) in every editable page;
-    # the editor now fetches it from /drawio/api_key when a diagram is saved.
+    # the editor now fetches a short lived token from /drawio/token when a diagram is saved.
     test 'do not render the api key when api is disabled' do
       render_wiki_page(rest_api_enabled: '0')
       assert_select 'script', text: /var Drawio/

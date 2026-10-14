@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-# Hands the current user's API key to the diagram editor when a diagram is
-# saved, instead of embedding it in every wiki and issue page. Session and
-# CSRF token authenticate the request; the key is never cached.
+# Hands the diagram editor a short lived token (RedmineDrawio::ApiToken) when a
+# diagram is saved. The REST API key never leaves the server; the token is
+# accepted by the REST API for 15 minutes in its place. Session and CSRF token
+# authenticate this request; the response is never cached.
 class DrawioController < ApplicationController
   EDIT_PERMISSIONS = %i[edit_wiki_pages edit_issues edit_own_issues add_issue_notes
                         edit_issue_notes edit_own_issue_notes].freeze
@@ -10,9 +11,9 @@ class DrawioController < ApplicationController
   before_action :require_login
   before_action :authorize_drawio_save
 
-  def api_key
+  def token
     response.headers['Cache-Control'] = 'no-store'
-    render json: { key: User.current.api_key }
+    render json: { token: RedmineDrawio::ApiToken.issue(User.current) }
   end
 
   private

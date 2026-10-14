@@ -30,12 +30,12 @@ if (await t.page.locator('#flash_drawio_api_warning').count()) t.problems.push('
 const dialogs = [];
 t.page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
 const frame = await openEditor(t, t.page.locator('img.drawioDiagram'), 'png');
-const key = t.page.waitForResponse(r => r.url().endsWith('/drawio/api_key'));
+const key = t.page.waitForResponse(r => r.url().endsWith('/drawio/token'));
 await frame.locator('#save').click();
 const res = await key;
 await t.page.waitForTimeout(1000);
-t.check('save with REST API off', { requests: ['403 xhr /drawio/api_key'], js: ['403'] });
-if (res.status() !== 403) t.problems.push(`api key with REST off: HTTP ${res.status()}`);
+t.check('save with REST API off', { requests: ['403 xhr /drawio/token'], js: ['403'] });
+if (res.status() !== 403) t.problems.push(`token with REST off: HTTP ${res.status()}`);
 if (!dialogs.length) t.problems.push('no error alert');
 await t.page.evaluate(m => {
   const p = document.createElement('pre'); p.textContent = `alert shown: ${m}`;

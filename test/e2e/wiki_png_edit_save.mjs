@@ -1,7 +1,7 @@
 // Function: edit and save a png diagram on a wiki page ({{drawio_attach(flow)}}).
 // Double click opens the editor (here the local diagrams.net stub), Save uploads
-// flow_1.png as an attachment through the REST API with the key fetched from
-// POST /drawio/api_key, and rewrites the macro to flow_1.
+// flow_1.png as an attachment through the REST API, authenticated with a short lived
+// token fetched from POST /drawio/token (never the API key), and rewrites the macro to flow_1.
 import { e2e } from '../../.codex/e2e/lib.mjs';
 import { startStub, setDrawioSettings, reseed, STUB_URL } from '../e2e_support/drawio.mjs';
 
@@ -19,7 +19,14 @@ const html = await t.page.content();
 if (/hashCode/.test(html)) t.problems.push('page still embeds hashCode');
 
 const keyRequests = [];
-t.page.on('request', r => { if (r.url().endsWith('/drawio/api_key')) keyRequests.push(r.method()); });
+const restAuth = [];
+t.page.on('request', r => {
+  if (r.url().endsWith('/drawio/token')) keyRequests.push(r.method());
+  if (/\.json(\?|$)/.test(r.url())) {
+    const h = r.headers();
+    restAuth.push(`${r.method()} ${r.url().replace(t.BASE, '')} token=${!!h['x-redmine-drawio-token']} apikey=${!!h['x-redmine-api-key']}`);
+  }
+});
 await img.dblclick();
 const frame = t.page.frameLocator('iframe.drawioEditor');
 await frame.locator('#status').filter({ hasText: 'loaded png' }).waitFor({ timeout: 15000 });
@@ -30,8 +37,14 @@ await frame.locator('#save').click();
 const put = await saved;
 if (put.status() !== 204 && put.status() !== 200) t.problems.push(`PUT wiki page: HTTP ${put.status()}`);
 await t.page.waitForTimeout(1500);
-if (keyRequests.join() !== 'POST') t.problems.push(`api key requests: ${keyRequests.join() || 'none'}`);
-await t.shot('saved-in-place', 'After Save: editor closed, the red diagram shown in place, attachment list updated without reload');
+if (keyRequests.join() !== 'POST') t.problems.push(`token requests: ${keyRequests.join() || 'none'}`);
+if (restAuth.length < 3 || restAuth.some(l => !l.includes('token=true') || l.includes('apikey=true'))) t.problems.push(`REST requests not all token-authenticated: ${restAuth.join(' | ')}`);
+await t.page.evaluate(lines => {
+  const p = document.createElement('pre'); p.textContent = 'REST requests of the save:\n' + lines.join('\n');
+  p.style.cssText = 'background:#ffd;padding:8px;border:1px solid #cc9';
+  document.querySelector('#content').prepend(p);
+}, restAuth);
+await t.shot('saved-in-place', 'After Save: the red diagram shown in place; every REST request of the save carried X-Redmine-Drawio-Token and none an API key');
 
 await t.go('/projects/e2e-project/wiki/Drawio_png');
 const att = await t.page.locator('.attachments').innerText();
