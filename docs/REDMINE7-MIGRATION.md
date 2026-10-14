@@ -42,6 +42,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | `821dfa8`, `2dcbbe0` | Decision q4: the REST API warning names Administration -> Settings -> Integrations, built from core's labels in the user's language (10 locales, README). |
 | `3e51654` | Decision q3: allowlist filter for inline SVG diagrams. |
 | `bd6ff1e` | Screenshots of the full run after the decisions (PostgreSQL). |
+| (this commit) | Combined run 2026-10-14, finding 1: `DrawioMacrosTest` includes the route helpers, so every named route starting with `test` ran as a test (core `test_email_*`, which made the count move between 50 and 52; with all plugins `ldap_settings#test`, `test_connection`, `test_send` raised `UrlGenerationError`). The class now runs only its own methods; `test/unit/runnable_methods_test.rb` fails without the change. |
 
 ## Work list for the migration session
 
@@ -119,6 +120,8 @@ Actions the person doing the upgrade must take, or know about, for this plugin:
 | 7.0-stable-GEOxyz + wiki_extensions, mermaid_macro, paste_as_wiki_tables (redmine70-migration) | PostgreSQL 16.15 | 41 runs, 147 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
 | **2026-10-07** 7.0-stable-GEOxyz, plugin alone | PostgreSQL 16.15 | 52 runs, 206 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
 | **2026-10-07** 7.0-stable-GEOxyz + 15 other GEOxyz plugins | PostgreSQL 16.15 | 52 runs, 206 assertions, 0 failures, 0 errors, 2 skips | 2 examples, 0 failures |
+| **2026-10-14** 7.0-stable-GEOxyz, plugin alone | PostgreSQL 16.15 | 52 runs, 212 assertions, 0 failures, 0 errors, 2 skips (stable count: no route helpers any more) | 2 examples, 0 failures |
+| **2026-10-14** + 15 other GEOxyz plugins + redmine_ldap_sync (has `ldap_settings#test`) | PostgreSQL 16.15 | 52 runs, 212 assertions, 0 failures, 0 errors, 2 skips; without the fix: `UrlGenerationError ... ldap_settings#test` | 2 examples, 0 failures |
 
 Baseline before any change (7.0-stable-GEOxyz): 33 runs, 91 assertions, 0 failures, 2 skips on both
 databases; rspec could not load (`cannot load such file -- spec_helper`). The 2 skips are the DMSF tests
@@ -215,6 +218,16 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
   always empty; saving works anyway (code reading).
 - After a failed save (REST API off) the new image stays in the page until reload; nothing is stored.
 - The inline default SVG has no width (viewBox only) and fills the column; upstream's scaling choice (#151).
+
+Combined run of 2026-10-14 (coordinator, 44 plugins), findings 2 and 3:
+- rspec `2 examples, 2 failures` with `Selenium::WebDriver::Error::SessionNotCreatedError`: the harness
+  has no Chrome. Environment, not code: the system spec needs Chrome plus a chromedriver of the same
+  major version (here `SE_CHROMEDRIVER` and `RMP_CHROME_BIN`, see work list item 3); with them it is
+  `2 examples, 0 failures` in the same checkout. Without them it fails rather than skips, by design.
+- H6 (shared `.codex` kit): `start_server.sh` writes `email_delivery` under `default:` in
+  `config/configuration.yml`, which Redmine also applies to the test environment; it should be written
+  for `$RMP_SERVER_ENV`. Recorded here, not changed in this repo's copy: the kit is shared and fixed
+  centrally. This plugin's tests do not depend on it (mail is only read in the e2e run).
 
 Kit notes (not in this plugin): `.codex/test_setup.sh` runs `$SUDO -u postgres` with an empty `$SUDO`
 when root (role created by hand here); `start_server.sh` keeps a pipe open when its output is piped

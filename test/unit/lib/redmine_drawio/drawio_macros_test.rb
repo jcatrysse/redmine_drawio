@@ -15,6 +15,12 @@ module RedmineDrawio
     include Rails.application.routes.url_helpers
     include ActionView::Helpers::UrlHelper
 
+    # The route helpers above include every named route; those starting with test_
+    # (core's test_email, other plugins' test_* routes) would run as tests.
+    def self.runnable_methods
+      super.reject { |m| instance_method(m).owner != self }
+    end
+
     fixtures :projects, :users, :email_addresses, :user_preferences, :members, :member_roles, :roles,
              :groups_users,
              :trackers, :projects_trackers,
