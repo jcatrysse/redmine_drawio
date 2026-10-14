@@ -5,4 +5,7 @@
                        l(:drawio_warning_api_needs_to_be_enabled,
                          path: [l(:label_administration), l(:label_settings), l(:label_integrations)].join(' -> ')),
                 class: 'flash warning', id: 'flash_drawio_api_warning') %>
-<%= javascript_tag "$(function() { $('#content').prepend($('#flash_drawio_api_warning')); });" %>
+<%= javascript_tag "document.addEventListener('DOMContentLoaded', function() {" \
+                   " var n = document.getElementById('flash_drawio_api_warning');" \
+                   " var c = document.getElementById('content');" \
+                   " if (n && c) { c.insertBefore(n, c.firstChild); } });" %>
