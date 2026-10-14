@@ -142,6 +142,14 @@ module RedmineDrawio
       assert response.body.blank?
     end
 
+    test 'no token while two-factor activation is pending' do
+      log_user('jsmith', 'jsmith')
+      User.any_instance.stubs(:must_activate_twofa?).returns(true)
+      post '/drawio/token', headers: { 'Accept' => 'application/json' }
+      assert_includes [302, 401, 403], response.status
+      assert_not_includes response.body, '"token"'
+    end
+
     test 'not routed for GET' do
       log_user('jsmith', 'jsmith')
       get '/drawio/token'

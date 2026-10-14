@@ -13,7 +13,11 @@ class DrawioController < ApplicationController
 
   def token
     response.headers['Cache-Control'] = 'no-store'
-    render json: { token: RedmineDrawio::ApiToken.issue(User.current) }
+    token = RedmineDrawio::ApiToken.issue(User.current)
+    # no token while two-factor activation is pending: refuse here, not at the first REST call
+    return head(:forbidden) if token.blank?
+
+    render json: { token: token }
   end
 
   private

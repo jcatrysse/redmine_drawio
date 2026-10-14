@@ -270,6 +270,9 @@ about 6495a3a elsewhere in this file are history.
   (`patches/dmsf_webdav_controller_patch.rb` and its tests; DMSF is not installed at GEOxyz), `AGENTS.md`
   (conflicts with ours), and 60fbbf1 (percentage diagram sizes in macro, dialog and 9 JS locales; a
   feature, not isolated). Take them with the next upstream release if wanted.
+- OpenAI review of the port (`docs/reviews/openai-2026-10-14-a9b9cc9.md`): 1 finding, fixed: no token
+  (403) while two-factor activation is pending. After it: 75 runs, 309 assertions, 0 failures, 0 errors,
+  2 skips; rspec 2 examples, 0 failures; alone and with 16 other GEOxyz plugins (7.0-stable-GEOxyz 8dae014, Rails 8.1.4).
 - Tests 2026-10-14 after the port: 74 runs, 302 assertions, 0 failures, 0 errors, 2 skips; rspec 2
   examples, 0 failures; identical alone and with 16 other GEOxyz plugins. e2e: 17 scripts, 69 screenshots,
   0 problems (`real_diagrams_net.mjs` took its offline path: the egress proxy answers 403 to the browser
