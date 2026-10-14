@@ -1,6 +1,6 @@
 # my-account-ui
 
-Run 2026-10-07T16:19:44.961Z against http://127.0.0.1:3000.
+Run 2026-10-14T21:16:20.303Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|

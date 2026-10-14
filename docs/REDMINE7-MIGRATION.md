@@ -20,6 +20,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | Upstream | mikitex70/redmine_drawio master @ ecf942ab2e6f48d82a438087a9a75e3a49083bc0 (2026-10-03); develop @ 6495a3a4d074b69d78bde6c4e07baaf63717200f |
 | Runs on Redmine 7 as is | JA |
 | Upstream sync | NIET NODIG: nothing: upstream master only adds the merge of GEOxyz's own PR #160; do NOT take develop 6495a3a (encrypts the API key server-side while drawioEditor.js:313 still base64/reverse-decodes it -> saving diagrams breaks) |
+| Upstream sync 2026-10-14 | develop rewritten (now ecf942a + d5880ab + 0920e00 + 60fbbf1; 6495a3a is gone, d5880ab is its rewrite). **0920e00 (CWE-798 token) ported** in `3545e0f`; DMSF WebDAV part and 60fbbf1 (percentage sizes) available upstream, not taken. See "Upstream sync 2026-10-14" |
 | After sync | n.v.t. |
 | Complexity (1 trivial .. 5 rewrite) | 1 |
 | Measured on | Redmine 7.0.1 (7.0-stable-GEOxyz + latest 7.0-stable), Rails 8.1.3.1, Ruby 3.3.6, PostgreSQL 16 and MariaDB 10.11 |
@@ -42,6 +43,7 @@ what is left. Written 2026-10-06 from a measured analysis (report at the bottom)
 | `821dfa8`, `2dcbbe0` | Decision q4: the REST API warning names Administration -> Settings -> Integrations, built from core's labels in the user's language (10 locales, README). |
 | `3e51654` | Decision q3: allowlist filter for inline SVG diagrams. |
 | `bd6ff1e` | Screenshots of the full run after the decisions (PostgreSQL). |
+| `3545e0f` | Upstream 0920e00 (CWE-798) ported: the editor saves with a signed 15-minute token (`RedmineDrawio::ApiToken`), never the API key; `POST /drawio/token` replaces `POST /drawio/api_key`. |
 | (this commit) | Combined run 2026-10-14, finding 1: `DrawioMacrosTest` includes the route helpers, so every named route starting with `test` ran as a test (core `test_email_*`, which made the count move between 50 and 52; with all plugins `ldap_settings#test`, `test_connection`, `test_send` raised `UrlGenerationError`). The class now runs only its own methods; `test/unit/runnable_methods_test.rb` fails without the change. |
 
 ## Work list for the migration session
@@ -174,7 +176,8 @@ Every screenshot was opened and looked at. Smoke found 0 plugin GET routes (the 
 | names that need URL encoding | double click | `special_filename.mjs` | `special-filename-saved` |
 | real diagrams.net editor | double click, default service URL | `real_diagrams_net.mjs` | `real-diagrams-net-*` (3) |
 | empty diagram refused, exit without saving | editor | `editor_cancel_empty.mjs` | `editor-cancel-empty-*` (2) |
-| who may edit: manager yes; reporter (wiki) and outsider read only; private project 403; anonymous read only; API key endpoint 200 / 422 without CSRF / 403 anonymous | page | `permissions.mjs` | `permissions-*` (5) |
+| who may edit: manager yes; reporter (wiki) and outsider read only; private project 403; anonymous read only; token endpoint 200 / 422 without CSRF / 403 anonymous | page | `permissions.mjs` | `permissions-*` (5) |
+| save authentication: every REST request of a save carries `X-Redmine-Drawio-Token`, none an API key; saving as admin and as member | double click | `wiki_png_edit_save.mjs`, `special_filename.mjs` (admin), `drawio_token_test.rb`, `api_token_test.rb` | `wiki-png-edit-save-saved-in-place`, `special-filename-saved` |
 | reporter on issues: editable through add_issue_notes (`Issue#editable?`) | issue | `issue_edit_save.mjs` | `issue-edit-save-reporter` |
 | jsToolBar button + macro dialog (insert, edit in place, svg only when enabled), wiki and new issue form | editor toolbar | `toolbar_macro_dialog.mjs` | `toolbar-macro-dialog-*` (6) |
 | plugin settings (service URL, svg switch, empty URL falls back to default, non-admin 403) | Administration > Plugins > Configure | `plugin_settings.mjs` | `plugin-settings-*` (4) |
@@ -244,6 +247,36 @@ Kit notes (not in this plugin): `.codex/test_setup.sh` runs `$SUDO -u postgres` 
 when root (role created by hand here); `start_server.sh` keeps a pipe open when its output is piped
 (`| tail`), so pipe it to a file; with `mise` on the PATH, `common.sh` picks Ruby 3.4 for Redmine 7
 (set `MISE_BIN` to a missing path to use the system Ruby).
+
+### Upstream sync 2026-10-14
+
+Upstream (mikitex70/redmine_drawio) rewrote `develop`: it is now `ecf942a` (= our base) + `d5880ab`
+(the former 6495a3a, server-side encryption of the API key) + `0920e00` "fixed CWE-798 (fixes #161)"
++ `60fbbf1` "diagram sizes now accepts percentage (#164)". Latest release is still v1.5.5. The warnings
+about 6495a3a elsewhere in this file are history.
+
+- **0920e00, ported** (`3545e0f`), approved by Jan on 2026-10-14 (bring plugins up to date with upstream
+  overnight). Reviewed: a signed token (`ActiveSupport::MessageVerifier`, secret derived from
+  `secret_key_base`) carrying only `redmine_drawio:<user id>`, 15 minutes, refused for locked users and
+  pending 2FA; `ApplicationController#find_current_user` (prepend, no other GEOxyz plugin patches it)
+  accepts it only on API requests where the API key would be accepted, with the REST API on, so it grants
+  exactly the user's API rights. Taken verbatim: `lib/redmine_drawio/api_token.rb`,
+  `patches/application_controller_patch.rb`, `test/unit/lib/redmine_drawio/api_token_test.rb`. Kept from
+  our side: upstream embeds the token in the page (`hashCode`), so a page open longer than 15 minutes can
+  no longer save (the drawing is lost when the upload fails); our editor instead fetches a fresh token from
+  `POST /drawio/token` right before saving (session + CSRF, no-store, edit permission somewhere, 403 with
+  the REST API off). Remaining divergence from upstream: that endpoint and the JS that calls it.
+- **Available upstream, not taken**: the DMSF WebDAV token patch of 0920e00
+  (`patches/dmsf_webdav_controller_patch.rb` and its tests; DMSF is not installed at GEOxyz), `AGENTS.md`
+  (conflicts with ours), and 60fbbf1 (percentage diagram sizes in macro, dialog and 9 JS locales; a
+  feature, not isolated). Take them with the next upstream release if wanted.
+- Tests 2026-10-14 after the port: 74 runs, 302 assertions, 0 failures, 0 errors, 2 skips; rspec 2
+  examples, 0 failures; identical alone and with 16 other GEOxyz plugins. e2e: 17 scripts, 69 screenshots,
+  0 problems (`real_diagrams_net.mjs` took its offline path: the egress proxy answers 403 to the browser
+  for embed.diagrams.net in this container today; the 2026-10-06 screenshots of the real editor remain).
+- Found while testing, not drawio's: **redmine-view-customize puts the current user's API key in every
+  page** (`ViewCustomize.context.user.apiKey`, once the user has a key). With that plugin installed the key
+  is in the page again, whatever drawio does. For that plugin's plan.
 
 ### Decided by Jan (2026-10-07)
 

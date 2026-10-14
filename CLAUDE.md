@@ -1,6 +1,6 @@
 # CLAUDE.md: redmine_drawio
 
-Redmine plugin `redmine_drawio`, run by GEOxyz. Upstream: mikitex70/redmine_drawio master @ ecf942ab2e6f48d82a438087a9a75e3a49083bc0 (2026-10-03); develop @ 6495a3a4d074b69d78bde6c4e07baaf63717200f. GEOxyz production branch: `master`.
+Redmine plugin `redmine_drawio`, run by GEOxyz. Upstream: mikitex70/redmine_drawio master @ ecf942ab2e6f48d82a438087a9a75e3a49083bc0 (2026-10-03); develop @ 60fbbf1 (rewritten since; 6495a3a no longer exists, see the plan's "Upstream sync 2026-10-14"). GEOxyz production branch: `master`.
 
 **Current work: the migration to Redmine 7.** Read
 [docs/REDMINE7-MIGRATION.md](docs/REDMINE7-MIGRATION.md) before anything else; it holds the plan,

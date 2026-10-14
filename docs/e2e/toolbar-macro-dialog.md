@@ -1,6 +1,6 @@
 # toolbar-macro-dialog
 
-Run 2026-10-07T16:22:32.439Z against http://127.0.0.1:3000.
+Run 2026-10-14T21:18:48.654Z against http://127.0.0.1:3000.
 
 | screenshot | user | URL | shows |
 |---|---|---|---|
