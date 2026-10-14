@@ -11,21 +11,22 @@ await setDrawioSettings(t, { url: STUB_URL, svg: false });
 await setRestApi(t, false);
 
 await t.go('/projects/e2e-project');
-if (!(await t.page.locator('#flash_warning').count())) t.problems.push('admin: no REST API warning');
-const warning = await t.page.locator('#flash_warning').innerText().catch(() => '');
+if (!(await t.page.locator('#flash_drawio_api_warning').count())) t.problems.push('admin: no REST API warning');
+const warning = await t.page.locator('#flash_drawio_api_warning').innerText().catch(() => '');
 if (!warning.includes('Administration -> Settings -> Integrations')) t.problems.push(`warning text: ${warning}`);
+if (!(await t.page.locator('#content > #flash_drawio_api_warning').count())) t.problems.push('warning not moved into #content');
 await t.shot('admin-warning', 'REST API off: the admin sees the drawio warning, pointing to Administration -> Settings -> Integrations (the Redmine 7 tab)');
 
 for (const user of ['reporter', 'outsider']) {
   await t.login(user);
   await t.go('/projects/e2e-project');
-  if (await t.page.locator('#flash_warning').count()) t.problems.push(`${user} sees the admin warning`);
+  if (await t.page.locator('#flash_drawio_api_warning').count()) t.problems.push(`${user} sees the admin warning`);
 }
 await t.shot('outsider-no-warning', 'REST API off: reporter and outsider get no warning (outsider shown)');
 
 await t.login('manager');
 await t.go('/projects/e2e-project/wiki/Drawio_png');
-if (await t.page.locator('#flash_warning').count()) t.problems.push('manager sees the admin warning');
+if (await t.page.locator('#flash_drawio_api_warning').count()) t.problems.push('manager sees the admin warning');
 const dialogs = [];
 t.page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
 const frame = await openEditor(t, t.page.locator('img.drawioDiagram'), 'png');
@@ -47,7 +48,7 @@ if (!/\{\{drawio_attach\(flow\)\}\}/.test(await t.page.inputValue('#content_text
 
 await setRestApi(t, true);
 await t.go('/projects/e2e-project');
-if (await t.page.locator('#flash_warning').count()) t.problems.push('warning still shown with REST on');
+if (await t.page.locator('#flash_drawio_api_warning').count()) t.problems.push('warning still shown with REST on');
 await t.shot('admin-no-warning', 'REST API on again: no warning');
 await setDrawioSettings(t, { url: '//embed.diagrams.net', svg: false });
 await stub.close();

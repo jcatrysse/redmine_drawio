@@ -1,2 +1,8 @@
-<% flash[:warning] = l(:drawio_warning_api_needs_to_be_enabled,
-                       path: [l(:label_administration), l(:label_settings), l(:label_integrations)].join(' -> ')) %>
+<%# Own warning element, not flash[:warning]: writing the flash while the layout renders
+    replaced a warning the controller had set for the same request. It is moved to the
+    top of #content, where Redmine renders its flash messages. %>
+<%= content_tag('div', notice_icon('warning') +
+                       l(:drawio_warning_api_needs_to_be_enabled,
+                         path: [l(:label_administration), l(:label_settings), l(:label_integrations)].join(' -> ')),
+                class: 'flash warning', id: 'flash_drawio_api_warning') %>
+<%= javascript_tag "$(function() { $('#content').prepend($('#flash_drawio_api_warning')); });" %>

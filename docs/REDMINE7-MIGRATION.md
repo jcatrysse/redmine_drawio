@@ -229,6 +229,17 @@ Combined run of 2026-10-14 (coordinator, 44 plugins), findings 2 and 3:
   for `$RMP_SERVER_ENV`. Recorded here, not changed in this repo's copy: the kit is shared and fixed
   centrally. This plugin's tests do not depend on it (mail is only read in the e2e run).
 
+Combined run of 2026-10-14, finding 4 (reported by the coordinator from redmine_ai_triage's tests):
+the admin REST API warning was written into `flash[:warning]` while the layout rendered (hook
+`view_layouts_base_body_top`), which replaced a warning the controller had set for the same request
+and kept drawio's text in the flash for the next request. Fixed: the hook renders its own
+`div.flash.warning#flash_drawio_api_warning` (core's warning icon) and moves it to the top of
+`#content`, where Redmine renders its flash; the page looks the same
+(`docs/e2e/rest-api-disabled-admin-warning.png`). `test/functional/api_warning_flash_test.rb` fails
+without it (controller warning lost, flash not empty). Tests 2026-10-14 after the fix: 55 runs,
+224 assertions, 0 failures, 0 errors, 2 skips, rspec 2 examples, 0 failures, alone and with 16 other
+GEOxyz plugins (incl. redmine_ldap_sync).
+
 Kit notes (not in this plugin): `.codex/test_setup.sh` runs `$SUDO -u postgres` with an empty `$SUDO`
 when root (role created by hand here); `start_server.sh` keeps a pipe open when its output is piped
 (`| tail`), so pipe it to a file; with `mise` on the PATH, `common.sh` picks Ruby 3.4 for Redmine 7
