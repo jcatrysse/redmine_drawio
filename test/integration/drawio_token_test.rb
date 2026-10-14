@@ -145,9 +145,11 @@ module RedmineDrawio
     test 'no token while two-factor activation is pending' do
       log_user('jsmith', 'jsmith')
       User.any_instance.stubs(:must_activate_twofa?).returns(true)
+      # same request as the editor: session cookie, JSON answer (not an API request:
+      # Redmine decides that on params[:format], so the session is used)
       post '/drawio/token', headers: { 'Accept' => 'application/json' }
-      assert_includes [302, 401, 403], response.status
-      assert_not_includes response.body, '"token"'
+      assert_response :forbidden
+      assert response.body.blank?
     end
 
     test 'not routed for GET' do
